@@ -628,14 +628,16 @@ open class BillingRepository(context: Context) {
         launchFlow(
             activity = activity!!,
             queryProductDetail.productDetails,
-            offerToken = queryProductDetail.offerDetails.offerToken
+            offerToken = queryProductDetail.offerDetails.offerToken,
+            planId = planId
         )
     }
 
     private fun launchFlow(
         activity: Activity,
         productDetails: ProductDetails,
-        offerToken: String?
+        offerToken: String?,
+        planId: String? = null
     ) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
         val paramsList = when (offerToken.isNullOrEmpty()) {
@@ -651,7 +653,8 @@ open class BillingRepository(context: Context) {
         }
 
         val flowParams =
-            BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
+            BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList)
+                .setObfuscatedProfileId(planId ?: "").build()
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
@@ -845,7 +848,6 @@ open class BillingRepository(context: Context) {
 
     private suspend fun purchaseToPurchaseDetail(purchase: Purchase?): List<PurchaseDetail>? {
         purchase ?: return null
-
         val resultList = ArrayList<PurchaseDetail>()
         val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
         val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
