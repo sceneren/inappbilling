@@ -15,6 +15,6 @@ interface OnPurchaseListener {
     fun onPurchaseResult(
         isPurchaseSuccess: Boolean,
         message: String,
-        purchaseDetail: List<PurchaseDetail>?
+        purchaseDetailList: List<PurchaseDetail>?
     )
 }

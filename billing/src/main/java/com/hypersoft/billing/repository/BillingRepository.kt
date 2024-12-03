@@ -112,6 +112,8 @@ open class BillingRepository(context: Context) {
      */
     private val job = Job()
 
+    private val purchasedJob = Job()
+
     /**
      * @property onPurchaseListener: Listen purchases result made by user.
      */
@@ -731,7 +733,7 @@ open class BillingRepository(context: Context) {
                     // If already owned but has not been consumed yet.
                     purchasesList?.let { queryUtils.checkForAcknowledgements(it, consumableList) }
                     Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
-                    CoroutineScope(Dispatchers.Default + job).launch {
+                    CoroutineScope(Dispatchers.Default + purchasedJob).launch {
                         purchasesList?.forEach { purchaseDetail ->
                             onPurchaseListener?.onPurchaseResult(
                                 true,
@@ -781,13 +783,11 @@ open class BillingRepository(context: Context) {
 
                 // State = PURCHASE
                 Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-                CoroutineScope(Dispatchers.Default + job).launch {
-                    onPurchaseResultMain(
-                        true,
-                        ResultState.PURCHASE_CONSUME.message,
-                        purchaseToPurchaseDetail(purchase)
-                    )
-                }
+                onPurchaseResultMain(
+                    true,
+                    ResultState.PURCHASE_CONSUME.message,
+                    purchase
+                )
 
 
                 if (purchase.isAcknowledged) {
@@ -814,18 +814,19 @@ open class BillingRepository(context: Context) {
     private fun onPurchaseResultMain(
         isSuccess: Boolean,
         message: String,
-        purchaseDetail: List<PurchaseDetail>?
+        purchase: Purchase?
     ) {
         CoroutineScope(Dispatchers.Main).launch {
             onPurchaseListener?.onPurchaseResult(
                 isPurchaseSuccess = isSuccess,
                 message = message,
-                purchaseDetail = purchaseDetail
+                purchaseDetailList = purchaseToPurchaseDetail(purchase)
             )
         }
     }
 
-    suspend private fun purchaseToPurchaseDetail(purchase: Purchase): List<PurchaseDetail> {
+    private suspend fun purchaseToPurchaseDetail(purchase: Purchase?): List<PurchaseDetail>? {
+        purchase ?: return null
 
         val resultList = ArrayList<PurchaseDetail>()
         val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
@@ -868,6 +869,7 @@ open class BillingRepository(context: Context) {
 
     protected fun endConnection() {
         job.cancel()
+        purchasedJob.complete()
         if (billingClient.isReady) {
             billingClient.endConnection()
         }
