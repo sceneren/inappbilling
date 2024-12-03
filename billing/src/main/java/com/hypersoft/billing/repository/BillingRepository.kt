@@ -53,7 +53,11 @@ open class BillingRepository(context: Context) {
     }
 
     private val queryUtils: QueryUtils by lazy { QueryUtils(billingClient) }
-    private val validationUtils: com.hypersoft.billing.utils.ValidationUtils by lazy { com.hypersoft.billing.utils.ValidationUtils(billingClient) }
+    private val validationUtils: com.hypersoft.billing.utils.ValidationUtils by lazy {
+        com.hypersoft.billing.utils.ValidationUtils(
+            billingClient
+        )
+    }
 
     /**
      * @property _purchasesSharedFlow: Collect (observe) this, to get user's purchase list currently owns
@@ -165,14 +169,22 @@ open class BillingRepository(context: Context) {
         // Check if connection is already being establishing
         if (Result.getResultState() == ResultState.CONNECTION_ESTABLISHING) {
             Result.setResultState(ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS)
-            onConnectionResultMain(callback, false, ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS.message)
+            onConnectionResultMain(
+                callback,
+                false,
+                ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS.message
+            )
             return
         }
         Result.setResultState(ResultState.CONNECTION_ESTABLISHING)
 
         if (billingClient.isReady) {
             Result.setResultState(ResultState.CONNECTION_ALREADY_ESTABLISHED)
-            onConnectionResultMain(callback, true, ResultState.CONNECTION_ALREADY_ESTABLISHED.message)
+            onConnectionResultMain(
+                callback,
+                true,
+                ResultState.CONNECTION_ALREADY_ESTABLISHED.message
+            )
             return
         }
 
@@ -180,7 +192,11 @@ open class BillingRepository(context: Context) {
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingServiceDisconnected() {
                     Result.setResultState(ResultState.CONNECTION_DISCONNECTED)
-                    onConnectionResultMain(callback, isSuccess = false, message = ResultState.CONNECTION_DISCONNECTED.message)
+                    onConnectionResultMain(
+                        callback,
+                        isSuccess = false,
+                        message = ResultState.CONNECTION_DISCONNECTED.message
+                    )
                 }
 
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -193,13 +209,21 @@ open class BillingRepository(context: Context) {
                         true -> ResultState.CONNECTION_ESTABLISHED.message
                         false -> billingResult.debugMessage
                     }
-                    onConnectionResultMain(callback = callback, isSuccess = BillingResponse(billingResult.responseCode).isOk, message = message)
+                    onConnectionResultMain(
+                        callback = callback,
+                        isSuccess = BillingResponse(billingResult.responseCode).isOk,
+                        message = message
+                    )
                 }
             })
         }
     }
 
-    private fun onConnectionResultMain(callback: (isSuccess: Boolean, message: String) -> Unit, isSuccess: Boolean, message: String) {
+    private fun onConnectionResultMain(
+        callback: (isSuccess: Boolean, message: String) -> Unit,
+        isSuccess: Boolean,
+        message: String
+    ) {
         CoroutineScope(Dispatchers.Main).launch {
             callback.invoke(isSuccess, message)
         }
@@ -209,14 +233,32 @@ open class BillingRepository(context: Context) {
     /* ------------------------------------------ User Queries ------------------------------------------ */
     /* -------------------------------------------------------------------------------------------------- */
 
-    protected fun setUserQueries(userInAppConsumable: List<String>, userInAppNonConsumable: List<String>, userSubsPurchases: List<String>) {
+    protected fun setUserQueries(
+        userInAppConsumable: List<String>,
+        userInAppNonConsumable: List<String>,
+        userSubsPurchases: List<String>
+    ) {
         _userQueryList.clear()
         _consumableList.clear()
 
         // Save user queries
         _consumableList.addAll(userInAppConsumable)
-        userInAppConsumable.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
-        userInAppNonConsumable.forEach { _userQueryList.add(Pair(BillingClient.ProductType.INAPP, it)) }
+        userInAppConsumable.forEach {
+            _userQueryList.add(
+                Pair(
+                    BillingClient.ProductType.INAPP,
+                    it
+                )
+            )
+        }
+        userInAppNonConsumable.forEach {
+            _userQueryList.add(
+                Pair(
+                    BillingClient.ProductType.INAPP,
+                    it
+                )
+            )
+        }
         userSubsPurchases.forEach { _userQueryList.add(Pair(BillingClient.ProductType.SUBS, it)) }
     }
 
@@ -255,7 +297,9 @@ open class BillingRepository(context: Context) {
         }
 
         billingClient
-            .queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(productType).build())
+            .queryPurchasesAsync(
+                QueryPurchasesParams.newBuilder().setProductType(productType).build()
+            )
             { billingResult, purchases ->
                 Log.i(TAG, "BillingRepository: $productType -> Purchases: $purchases")
                 if (BillingResponse(billingResult.responseCode).isOk) {
@@ -280,9 +324,13 @@ open class BillingRepository(context: Context) {
     }
 
     private fun consumeProduct(purchase: Purchase) {
-        val consumeParams = ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+        val consumeParams =
+            ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
         billingClient.consumeAsync(consumeParams) { billingResult, _ ->
-            Log.d(TAG, "queryPurchases: consumeProduct: consumed: Code: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
+            Log.d(
+                TAG,
+                "queryPurchases: consumeProduct: consumed: Code: ${billingResult.responseCode} -- ${billingResult.debugMessage}"
+            )
         }
     }
 
@@ -309,14 +357,18 @@ open class BillingRepository(context: Context) {
                 Log.d(TAG, "BillingRepository: CompletePurchase: $completePurchase")
 
                 completePurchase.productDetailList.forEach { productDetails ->
-                    val productType = if (productDetails.productType == BillingClient.ProductType.INAPP) ProductType.inapp else ProductType.subs
-                    val splitList = completePurchase.purchase.accountIdentifiers?.obfuscatedAccountId?.split("_") ?: emptyList()
+                    val productType =
+                        if (productDetails.productType == BillingClient.ProductType.INAPP) ProductType.inapp else ProductType.subs
+                    val splitList =
+                        completePurchase.purchase.accountIdentifiers?.obfuscatedAccountId?.split("_")
+                            ?: emptyList()
                     val planId = if (splitList.isNotEmpty() && splitList.size >= 2) {
                         splitList[1]
                     } else {
                         ""
                     }
-                    val offerDetails = productDetails.subscriptionOfferDetails?.find { it.basePlanId == planId }
+                    val offerDetails =
+                        productDetails.subscriptionOfferDetails?.find { it.basePlanId == planId }
                     val planTitle = offerDetails?.let { queryUtils.getPlanTitle(it) } ?: ""
 
                     val purchaseDetail = PurchaseDetail(
@@ -390,7 +442,10 @@ open class BillingRepository(context: Context) {
         }
     }
 
-    private fun processStoreProducts(productDetailsList: List<ProductDetails>, isCompleted: Boolean) {
+    private fun processStoreProducts(
+        productDetailsList: List<ProductDetails>,
+        isCompleted: Boolean
+    ) {
         val queryProductDetail = arrayListOf<QueryProductDetail>()
 
         productDetailsList.forEach { productDetails ->
@@ -401,11 +456,13 @@ open class BillingRepository(context: Context) {
                     val pricingPhase = PricingPhase(
                         planTitle = "",
                         recurringMode = RecurringMode.ORIGINAL,
-                        price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString().removeSuffix(".00"),
+                        price = productDetails.oneTimePurchaseOfferDetails?.formattedPrice.toString()
+                            .removeSuffix(".00"),
                         currencyCode = productDetails.oneTimePurchaseOfferDetails?.priceCurrencyCode.toString(),
                         billingCycleCount = 0,
                         billingPeriod = "",
-                        priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L,
+                        priceAmountMicros = productDetails.oneTimePurchaseOfferDetails?.priceAmountMicros
+                            ?: 0L,
                         freeTrialPeriod = 0
                     )
 
@@ -424,7 +481,8 @@ open class BillingRepository(context: Context) {
                     productDetails.subscriptionOfferDetails?.let { offersList ->
                         offersList.forEach tag@{ offer ->       // Weekly, Monthly, etc // Free-Regular  // Regular
 
-                            val isExist = productDetailList.any { it.productId == productDetails.productId && it.planId == offer.basePlanId }
+                            val isExist =
+                                productDetailList.any { it.productId == productDetails.productId && it.planId == offer.basePlanId }
                             if (isExist) {
                                 return@tag
                             }
@@ -433,7 +491,11 @@ open class BillingRepository(context: Context) {
 
                             offer.pricingPhases.pricingPhaseList.forEach { pricingPhaseItem ->
                                 val pricingPhase = PricingPhase()
-                                if (pricingPhaseItem.formattedPrice.equals("Free", ignoreCase = true)) {
+                                if (pricingPhaseItem.formattedPrice.equals(
+                                        "Free",
+                                        ignoreCase = true
+                                    )
+                                ) {
                                     pricingPhase.recurringMode = RecurringMode.FREE
                                     pricingPhase.freeTrialPeriod = queryUtils.getTrialDay(offer)
                                     pricingPhase.billingCycleCount = 0
@@ -444,12 +506,15 @@ open class BillingRepository(context: Context) {
                                 } else if (pricingPhaseItem.recurrenceMode == 2) {
                                     pricingPhase.recurringMode = RecurringMode.DISCOUNTED
                                     pricingPhase.freeTrialPeriod = 0
-                                    pricingPhase.billingCycleCount = pricingPhaseItem.billingCycleCount
+                                    pricingPhase.billingCycleCount =
+                                        pricingPhaseItem.billingCycleCount
                                 }
-                                pricingPhase.planTitle = queryUtils.getPlanTitle(pricingPhaseItem.billingPeriod)
+                                pricingPhase.planTitle =
+                                    queryUtils.getPlanTitle(pricingPhaseItem.billingPeriod)
                                 pricingPhase.currencyCode = pricingPhaseItem.priceCurrencyCode
                                 pricingPhase.billingPeriod = pricingPhaseItem.billingPeriod
-                                pricingPhase.price = pricingPhaseItem.formattedPrice.removeSuffix(".00")
+                                pricingPhase.price =
+                                    pricingPhaseItem.formattedPrice.removeSuffix(".00")
                                 pricingPhase.priceAmountMicros = pricingPhaseItem.priceAmountMicros
                                 pricingPhaseList.add(pricingPhase)
                             }
@@ -462,7 +527,13 @@ open class BillingRepository(context: Context) {
                                 pricingDetails = pricingPhaseList
                             }
                             _productDetailList.add(productDetail)
-                            queryProductDetail.add(QueryProductDetail(productDetail, productDetails, offer))
+                            queryProductDetail.add(
+                                QueryProductDetail(
+                                    productDetail,
+                                    productDetails,
+                                    offer
+                                )
+                            )
                         }
                     }
                 }
@@ -481,13 +552,17 @@ open class BillingRepository(context: Context) {
     /* ---------------------------------------- Product Purchases ----------------------------------------- */
     /* ---------------------------------------------------------------------------------------------------- */
 
-    protected fun purchaseInApp(activity: Activity?, productId: String, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseInApp(
+        activity: Activity?,
+        productId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForInApp(activity, productId)
 
         if (errorMessage != null) {
-            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage, null)
             return
         }
 
@@ -499,17 +574,26 @@ open class BillingRepository(context: Context) {
             launchFlow(activity = activity!!, it.productDetails, offerToken = null)
         } ?: run {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST)
-            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message)
+            onPurchaseListener.onPurchaseResult(
+                false,
+                message = ResultState.CONSOLE_PRODUCTS_IN_APP_NOT_EXIST.message,
+                null
+            )
         }
     }
 
-    protected fun purchaseSubs(activity: Activity?, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
+    protected fun purchaseSubs(
+        activity: Activity?,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
         this.onPurchaseListener = onPurchaseListener
 
         val errorMessage = validationUtils.checkForSubs(activity, productId)
 
         if (errorMessage != null) {
-            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage, null)
             return
         }
 
@@ -520,21 +604,41 @@ open class BillingRepository(context: Context) {
         }
         if (queryProductDetail?.offerDetails == null) {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
-            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+            onPurchaseListener.onPurchaseResult(
+                false,
+                message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message,
+                null
+            )
             return
         }
 
-        launchFlow(activity = activity!!, queryProductDetail.productDetails, offerToken = queryProductDetail.offerDetails.offerToken)
+        launchFlow(
+            activity = activity!!,
+            queryProductDetail.productDetails,
+            offerToken = queryProductDetail.offerDetails.offerToken
+        )
     }
 
-    private fun launchFlow(activity: Activity, productDetails: ProductDetails, offerToken: String?) {
+    private fun launchFlow(
+        activity: Activity,
+        productDetails: ProductDetails,
+        offerToken: String?
+    ) {
         Log.i(TAG, "launchFlow: Product Details about to be purchase: $productDetails")
         val paramsList = when (offerToken.isNullOrEmpty()) {
-            true -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).build())
-            false -> listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(productDetails).setOfferToken(offerToken).build())
+            true -> listOf(
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails).build()
+            )
+
+            false -> listOf(
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails).setOfferToken(offerToken).build()
+            )
         }
 
-        val flowParams = BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
+        val flowParams =
+            BillingFlowParams.newBuilder().setProductDetailsParamsList(paramsList).build()
         billingClient.launchBillingFlow(activity, flowParams)
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
@@ -556,13 +660,17 @@ open class BillingRepository(context: Context) {
         val oldPurchase = purchaseDetailList.find { it.productId == oldProductId }
 
         if (errorMessage != null) {
-            onPurchaseListener.onPurchaseResult(false, message = errorMessage)
+            onPurchaseListener.onPurchaseResult(false, message = errorMessage, null)
             return
         }
 
         if (oldPurchase == null) {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND)
-            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND.message)
+            onPurchaseListener.onPurchaseResult(
+                false,
+                message = ResultState.CONSOLE_PRODUCTS_OLD_SUB_NOT_FOUND.message,
+                null
+            )
             return
         }
 
@@ -574,7 +682,11 @@ open class BillingRepository(context: Context) {
 
         if (queryProductDetail?.offerDetails == null) {
             Result.setResultState(ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST)
-            onPurchaseListener.onPurchaseResult(false, message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message)
+            onPurchaseListener.onPurchaseResult(
+                false,
+                message = ResultState.CONSOLE_PRODUCTS_SUB_NOT_EXIST.message,
+                null
+            )
             return
         }
 
@@ -600,87 +712,154 @@ open class BillingRepository(context: Context) {
         Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_SUCCESSFULLY)
     }
 
-    private val purchasesListener: PurchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchasesList: List<Purchase>? ->
-        Log.d(TAG, "PurchasesUpdatedListener: purchasesListener: ${billingResult.responseCode} -- ${billingResult.debugMessage}")
-        val response = BillingResponse(billingResult.responseCode)
-        when {
-            response.isOk -> {
-                Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-                handlePurchase(purchasesList)
-                //fetchPurchases()
-                return@PurchasesUpdatedListener
-            }
-
-            response.isAlreadyOwned -> {
-                // If already owned but has not been consumed yet.
-                purchasesList?.let { queryUtils.checkForAcknowledgements(it, consumableList) }
-                Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
-                onPurchaseListener?.onPurchaseResult(true, ResultState.PURCHASING_ALREADY_OWNED.message)
-                return@PurchasesUpdatedListener
-            }
-
-            response.isUserCancelled -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
-
-            response.isTerribleFailure -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
-            response.isRecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
-            response.isNonrecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
-        }
-        onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message)
-    }
-
-    private fun handlePurchase(purchasesList: List<Purchase>?) = CoroutineScope(Dispatchers.IO).launch {
-        if (purchasesList == null) {
-            Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
-            onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message)
-            return@launch
-        }
-
-        purchasesList.forEach { purchase ->
-            // Iterate and search for consumable product if any
-            var isConsumable = false
-            purchase.products.forEach inner@{
-                if (consumableList.contains(it)) {
-                    isConsumable = true
-                    return@inner
+    private val purchasesListener: PurchasesUpdatedListener =
+        PurchasesUpdatedListener { billingResult, purchasesList: List<Purchase>? ->
+            Log.d(
+                TAG,
+                "PurchasesUpdatedListener: purchasesListener: ${billingResult.responseCode} -- ${billingResult.debugMessage}"
+            )
+            val response = BillingResponse(billingResult.responseCode)
+            when {
+                response.isOk -> {
+                    Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+                    handlePurchase(purchasesList)
+                    //fetchPurchases()
+                    return@PurchasesUpdatedListener
                 }
-            }
 
-            // true / false
-            if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
-                Result.setResultState(ResultState.PURCHASING_FAILURE)
-                onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message)
-                return@forEach
-            }
-
-            // State = PURCHASE
-            Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
-            onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
-
-            if (purchase.isAcknowledged) {
-                //onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
-            } else {
-                if (isConsumable) {
-                    queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
-                        if (it) {
-                            Result.setResultState(ResultState.PURCHASE_CONSUME)
-                            //onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
-                        } else {
-                            Result.setResultState(ResultState.PURCHASE_FAILURE)
-                            //onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                response.isAlreadyOwned -> {
+                    // If already owned but has not been consumed yet.
+                    purchasesList?.let { queryUtils.checkForAcknowledgements(it, consumableList) }
+                    Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
+                    CoroutineScope(Dispatchers.Default + job).launch {
+                        purchasesList?.forEach { purchaseDetail ->
+                            onPurchaseListener?.onPurchaseResult(
+                                true,
+                                ResultState.PURCHASING_ALREADY_OWNED.message,
+                                purchaseToPurchaseDetail(purchaseDetail)
+                            )
                         }
                     }
-                } else {
+
+
+                    return@PurchasesUpdatedListener
+                }
+
+                response.isUserCancelled -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_USER_CANCELLED)
+
+                response.isTerribleFailure -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+                response.isRecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+                response.isNonrecoverableError -> Result.setResultState(ResultState.LAUNCHING_FLOW_INVOCATION_EXCEPTION_FOUND)
+            }
+            onPurchaseListener?.onPurchaseResult(false, Result.getResultState().message, null)
+        }
+
+    private fun handlePurchase(purchasesList: List<Purchase>?) =
+        CoroutineScope(Dispatchers.IO).launch {
+            if (purchasesList == null) {
+                Result.setResultState(ResultState.PURCHASING_NO_PURCHASES_FOUND)
+                onPurchaseResultMain(false, ResultState.PURCHASING_NO_PURCHASES_FOUND.message, null)
+                return@launch
+            }
+
+            purchasesList.forEach { purchase ->
+                // Iterate and search for consumable product if any
+                var isConsumable = false
+                purchase.products.forEach inner@{
+                    if (consumableList.contains(it)) {
+                        isConsumable = true
+                        return@inner
+                    }
+                }
+
+                // true / false
+                if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+                    Result.setResultState(ResultState.PURCHASING_FAILURE)
+                    onPurchaseResultMain(false, ResultState.PURCHASING_FAILURE.message, null)
+                    return@forEach
+                }
+
+                // State = PURCHASE
+                Result.setResultState(ResultState.PURCHASING_SUCCESSFULLY)
+                CoroutineScope(Dispatchers.Default + job).launch {
+                    onPurchaseResultMain(
+                        true,
+                        ResultState.PURCHASE_CONSUME.message,
+                        purchaseToPurchaseDetail(purchase)
+                    )
+                }
+
+
+                if (purchase.isAcknowledged) {
                     //onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
-                    queryUtils.checkForAcknowledgements(purchasesList)
+                } else {
+                    if (isConsumable) {
+                        queryUtils.checkForAcknowledgementsAndConsumable(purchasesList) {
+                            if (it) {
+                                Result.setResultState(ResultState.PURCHASE_CONSUME)
+                                //onPurchaseResultMain(true, ResultState.PURCHASE_CONSUME.message)
+                            } else {
+                                Result.setResultState(ResultState.PURCHASE_FAILURE)
+                                //onPurchaseResultMain(false, ResultState.PURCHASE_FAILURE.message)
+                            }
+                        }
+                    } else {
+                        //onPurchaseResultMain(true, ResultState.PURCHASING_SUCCESSFULLY.message)
+                        queryUtils.checkForAcknowledgements(purchasesList)
+                    }
                 }
             }
         }
+
+    private fun onPurchaseResultMain(
+        isSuccess: Boolean,
+        message: String,
+        purchaseDetail: List<PurchaseDetail>?
+    ) {
+        CoroutineScope(Dispatchers.Main).launch {
+            onPurchaseListener?.onPurchaseResult(
+                isPurchaseSuccess = isSuccess,
+                message = message,
+                purchaseDetail = purchaseDetail
+            )
+        }
     }
 
-    private fun onPurchaseResultMain(isSuccess: Boolean, message: String) {
-        CoroutineScope(Dispatchers.Main).launch {
-            onPurchaseListener?.onPurchaseResult(isPurchaseSuccess = isSuccess, message = message)
+    suspend private fun purchaseToPurchaseDetail(purchase: Purchase): List<PurchaseDetail> {
+
+        val resultList = ArrayList<PurchaseDetail>()
+        val productParams = queryUtils.getPurchaseParams(userQueryList, purchase.products)
+        val productDetailsList = queryUtils.queryProductDetailsAsync(productParams)
+        val completePurchase = CompletePurchase(purchase, productDetailsList)
+        completePurchase.productDetailList.forEach { productDetails ->
+            val productType =
+                if (productDetails.productType == BillingClient.ProductType.INAPP) ProductType.inapp else ProductType.subs
+            val splitList =
+                completePurchase.purchase.accountIdentifiers?.obfuscatedAccountId?.split("_")
+                    ?: emptyList()
+            val planId = if (splitList.isNotEmpty() && splitList.size >= 2) {
+                splitList[1]
+            } else {
+                ""
+            }
+            val offerDetails =
+                productDetails.subscriptionOfferDetails?.find { it.basePlanId == planId }
+            val planTitle = offerDetails?.let { queryUtils.getPlanTitle(it) } ?: ""
+            val purchaseDetail = PurchaseDetail(
+                productId = productDetails.productId,
+                planId = planId,
+                productTitle = productDetails.title,
+                planTitle = planTitle,
+                purchaseToken = completePurchase.purchase.purchaseToken,
+                productType = productType,
+                purchaseTime = completePurchase.purchase.purchaseTime.toFormattedDate(),
+                purchaseTimeMillis = completePurchase.purchase.purchaseTime,
+                isAutoRenewing = completePurchase.purchase.isAutoRenewing
+            )
+            resultList.add(purchaseDetail)
         }
+        return resultList
+
     }
 
     /**
@@ -726,3 +905,4 @@ value class BillingResponse(private val code: Int) {
             BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
         )
 }
+

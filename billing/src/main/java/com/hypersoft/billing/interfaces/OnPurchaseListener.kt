@@ -1,5 +1,7 @@
 package com.hypersoft.billing.interfaces
 
+import com.hypersoft.billing.dataClasses.PurchaseDetail
+
 /**
  * @Author: SOHAIB AHMED
  * @Date: 16,April,2023
@@ -10,5 +12,9 @@ package com.hypersoft.billing.interfaces
 
 interface OnPurchaseListener {
 
-    fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String)
+    fun onPurchaseResult(
+        isPurchaseSuccess: Boolean,
+        message: String,
+        purchaseDetail: List<PurchaseDetail>?
+    )
 }
