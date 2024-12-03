@@ -28,11 +28,16 @@ open class BillingController(context: Context) : BillingRepository(context) {
         userInAppConsumable: List<String>,
         userInAppNonConsumable: List<String>,
         userSubsPurchases: List<String>,
-        billingListener: BillingListener? = null
+        billingListener: BillingListener? = null,
+        autoConsume: Boolean = true,
+        autoAcknowledge: Boolean = true
     ) {
         this.billingListener = billingListener
 
-        startConnection { isSuccess, message ->
+        startConnection(
+            autoConsume = autoConsume,
+            autoAcknowledge = autoAcknowledge
+        ) { isSuccess, message ->
             billingListener?.onConnectionResult(isSuccess, message)
             if (isSuccess) {
                 fetchData(userInAppConsumable, userInAppNonConsumable, userSubsPurchases)
@@ -40,7 +45,11 @@ open class BillingController(context: Context) : BillingRepository(context) {
         }
     }
 
-    private fun fetchData(userInAppConsumable: List<String>, userInAppNonConsumable: List<String>, userSubsPurchases: List<String>) {
+    private fun fetchData(
+        userInAppConsumable: List<String>,
+        userInAppNonConsumable: List<String>,
+        userSubsPurchases: List<String>
+    ) {
         setUserQueries(userInAppConsumable, userInAppNonConsumable, userSubsPurchases)
         fetchPurchases()
         fetchStoreProducts()
@@ -58,7 +67,11 @@ open class BillingController(context: Context) : BillingRepository(context) {
         productId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        purchaseInApp(activity = activity, productId = productId, onPurchaseListener = onPurchaseListener)
+        purchaseInApp(
+            activity = activity,
+            productId = productId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
     fun makePurchaseSub(
@@ -67,7 +80,12 @@ open class BillingController(context: Context) : BillingRepository(context) {
         planId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        purchaseSubs(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+        purchaseSubs(
+            activity = activity,
+            productId = productId,
+            planId = planId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
     fun updatePurchaseSub(
@@ -77,7 +95,13 @@ open class BillingController(context: Context) : BillingRepository(context) {
         planId: String,
         onPurchaseListener: OnPurchaseListener
     ) {
-        updateSubs(activity = activity, oldProductId = oldProductId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+        updateSubs(
+            activity = activity,
+            oldProductId = oldProductId,
+            productId = productId,
+            planId = planId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
     fun cleanBilling() {

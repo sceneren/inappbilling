@@ -107,7 +107,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val onPurchaseListener = object : OnPurchaseListener {
-        override fun onPurchaseResult(isPurchaseSuccess: Boolean, message: String) {
+        override fun onPurchaseResult(
+            isPurchaseSuccess: Boolean,
+            message: String,
+            purchaseDetailList: List<PurchaseDetail>?
+        ) {
             showMessage(message)
         }
     }

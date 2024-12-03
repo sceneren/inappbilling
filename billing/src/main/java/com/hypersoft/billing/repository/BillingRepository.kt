@@ -119,6 +119,10 @@ open class BillingRepository(context: Context) {
      */
     private var onPurchaseListener: OnPurchaseListener? = null
 
+    private var autoConsume: Boolean = true
+
+    private var autoAcknowledge: Boolean = true
+
     /**
      *  Step 1: Billing Connection
      *   @see startConnection
@@ -166,8 +170,13 @@ open class BillingRepository(context: Context) {
      *  @see [BillingClient.isReady]
      *
      */
-    protected fun startConnection(callback: (isSuccess: Boolean, message: String) -> Unit) {
-
+    protected fun startConnection(
+        autoConsume: Boolean,
+        autoAcknowledge: Boolean,
+        callback: (isSuccess: Boolean, message: String) -> Unit
+    ) {
+        this.autoConsume = autoConsume
+        this.autoAcknowledge = autoAcknowledge
         // Check if connection is already being establishing
         if (Result.getResultState() == ResultState.CONNECTION_ESTABLISHING) {
             Result.setResultState(ResultState.CONNECTION_ESTABLISHING_IN_PROGRESS)
@@ -390,7 +399,9 @@ open class BillingRepository(context: Context) {
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_RESPONSE_COMPLETE)
             Result.setResultState(ResultState.CONSOLE_PURCHASE_PRODUCTS_CHECKED_FOR_ACKNOWLEDGEMENT)
 
-            queryUtils.checkForAcknowledgements(purchases, consumableList)
+            if (autoAcknowledge) {
+                queryUtils.checkForAcknowledgements(purchases, consumableList)
+            }
 
             _purchaseDetailList.clear()
             _purchaseDetailList.addAll(resultList)
@@ -731,7 +742,14 @@ open class BillingRepository(context: Context) {
 
                 response.isAlreadyOwned -> {
                     // If already owned but has not been consumed yet.
-                    purchasesList?.let { queryUtils.checkForAcknowledgements(it, consumableList) }
+                    if (autoConsume) {
+                        purchasesList?.let {
+                            queryUtils.checkForAcknowledgements(
+                                it,
+                                consumableList
+                            )
+                        }
+                    }
                     Result.setResultState(ResultState.PURCHASING_ALREADY_OWNED)
                     CoroutineScope(Dispatchers.Default + purchasedJob).launch {
                         purchasesList?.forEach { purchaseDetail ->

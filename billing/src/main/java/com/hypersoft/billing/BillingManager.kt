@@ -22,26 +22,60 @@ class BillingManager(private val context: Context) : BillingController(context) 
         productInAppConsumable: List<String>,
         productInAppNonConsumable: List<String>,
         productSubscriptions: List<String>,
-        billingListener: BillingListener? = null
+        billingListener: BillingListener? = null,
+        autoConsume: Boolean = true,
+        autoAcknowledge: Boolean = true
     ) {
         startBillingConnection(
             userInAppConsumable = productInAppConsumable,
             userInAppNonConsumable = productInAppNonConsumable,
             userSubsPurchases = productSubscriptions,
-            billingListener = billingListener
+            billingListener = billingListener,
+            autoConsume = autoConsume,
+            autoAcknowledge = autoAcknowledge
         )
     }
 
-    fun makeInAppPurchase(activity: Activity?, productId: String, onPurchaseListener: OnPurchaseListener) {
-        makePurchaseInApp(activity = activity, productId = productId, onPurchaseListener = onPurchaseListener)
+    fun makeInAppPurchase(
+        activity: Activity?,
+        productId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        makePurchaseInApp(
+            activity = activity,
+            productId = productId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
-    fun makeSubPurchase(activity: Activity?, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
-        makePurchaseSub(activity = activity, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+    fun makeSubPurchase(
+        activity: Activity?,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        makePurchaseSub(
+            activity = activity,
+            productId = productId,
+            planId = planId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
-    fun updateSubPurchase(activity: Activity?, oldProductId: String, productId: String, planId: String, onPurchaseListener: OnPurchaseListener) {
-        updatePurchaseSub(activity = activity, oldProductId = oldProductId, productId = productId, planId = planId, onPurchaseListener = onPurchaseListener)
+    fun updateSubPurchase(
+        activity: Activity?,
+        oldProductId: String,
+        productId: String,
+        planId: String,
+        onPurchaseListener: OnPurchaseListener
+    ) {
+        updatePurchaseSub(
+            activity = activity,
+            oldProductId = oldProductId,
+            productId = productId,
+            planId = planId,
+            onPurchaseListener = onPurchaseListener
+        )
     }
 
     fun destroyBilling() = cleanBilling()
